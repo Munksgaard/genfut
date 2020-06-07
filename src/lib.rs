@@ -89,7 +89,7 @@ pub fn genfut(opt: Opt) -> Result<(), Box<dyn std::error::Error>>{
     {
         let mut futhark_cmd = Command::new("futhark");
         futhark_cmd.arg("pkg").arg("sync");
-        let _ = futhark_cmd.output().expect("failed: futhark pkg sync");
+        let _ = futhark_cmd.output()?;
     }
 
     // Generate C code, Though only headerfiles are needed.
@@ -111,10 +111,9 @@ pub fn genfut(opt: Opt) -> Result<(), Box<dyn std::error::Error>>{
         );
     }
 
-    let headers = std::fs::read_to_string(PathBuf::from(out_dir).join("lib/a.h"))
-        .expect("Could not read headers");
+    let headers = std::fs::read_to_string(PathBuf::from(out_dir).join("lib/a.h"))?;
 
-    let re_array_types = Regex::new(r"struct (futhark_.+_\d+d) ;").expect("Regex failed!");
+    let re_array_types = Regex::new(r"struct (futhark_.+_\d+d) ;")?;
     let array_types: Vec<String> = re_array_types
         .captures_iter(&headers)
         .map(|c| c[1].to_owned())
@@ -125,7 +124,7 @@ pub fn genfut(opt: Opt) -> Result<(), Box<dyn std::error::Error>>{
     // build.rs
     let static_build = include_str!("static/build.rs");
     let mut build_file =
-        File::create(PathBuf::from(out_dir).join("build.rs")).expect("File creation failed!");
+        File::create(PathBuf::from(out_dir).join("build.rs"))?;
     write!(&mut build_file, "{}", static_build);
 
     // Cargo.toml
@@ -138,29 +137,29 @@ pub fn genfut(opt: Opt) -> Result<(), Box<dyn std::error::Error>>{
         license = &opt.license,
     );
     let mut cargo_file =
-        File::create(PathBuf::from(out_dir).join("Cargo.toml")).expect("File creation failed!");
+        File::create(PathBuf::from(out_dir).join("Cargo.toml"))?;
     write!(&mut cargo_file, "{}", static_cargo);
 
     // src/context.rs
     let static_context = include_str!("static/static_context.rs");
     let mut context_file =
-        File::create(PathBuf::from(out_dir).join("src/context.rs")).expect("File creation failed!");
+        File::create(PathBuf::from(out_dir).join("src/context.rs"))?;
     writeln!(&mut context_file, "{}", static_context);
 
     // src/traits.rs
     let static_traits = include_str!("static/static_traits.rs");
     let mut traits_file =
-        File::create(PathBuf::from(out_dir).join("src/traits.rs")).expect("File creation failed!");
+        File::create(PathBuf::from(out_dir).join("src/traits.rs"))?;
     writeln!(&mut traits_file, "{}", static_traits);
 
     let static_array = include_str!("static/static_array.rs");
 
     let mut array_file =
-        File::create(PathBuf::from(out_dir).join("src/arrays.rs")).expect("File creation failed!");
+        File::create(PathBuf::from(out_dir).join("src/arrays.rs"))?;
     writeln!(&mut array_file, "{}", static_array);
     writeln!(&mut array_file, "{}", gen_impl_futhark_types(&array_types));
 
-    let re_entry_points = Regex::new(r"(?m)int futhark_entry_(.+)\(struct futhark_context \*ctx,(\s*(:?const\s*)?(:?struct\s*)?[a-z0-9_]+\s\**[a-z0-9]+,?\s?)+\);").unwrap();
+    let re_entry_points = Regex::new(r"(?m)int futhark_entry_(.+)\(struct futhark_context \*ctx,(\s*(:?const\s*)?(:?struct\s*)?[a-z0-9_]+\s\**[a-z0-9]+,?\s?)+\);")?;
 
     let entry_points: Vec<String> = re_entry_points
         .captures_iter(&headers)
@@ -168,7 +167,7 @@ pub fn genfut(opt: Opt) -> Result<(), Box<dyn std::error::Error>>{
         .collect();
     let static_lib = include_str!("static/static_lib.rs");
     let mut methods_file =
-        File::create(PathBuf::from(out_dir).join("src/lib.rs")).expect("File creation failed!");
+        File::create(PathBuf::from(out_dir).join("src/lib.rs"))?;
     writeln!(&mut methods_file, "{}", static_lib);
     writeln!(&mut methods_file, "{}", gen_entry_points(&entry_points));
 
