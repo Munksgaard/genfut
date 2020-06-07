@@ -4,16 +4,14 @@ use std::path::PathBuf;
 use std::process::Command;
 
 #[cfg(not(any(feature = "opencl", feature = "cuda", feature = "sequential_c")))]
-pub(crate) fn gen_c(in_file: &std::path::Path, out_dir: &std::path::Path) {}
+pub(crate) fn gen_c(in_file: &std::path::Path, out_dir: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {}
 
 #[cfg(feature = "sequential_c")]
-pub(crate) fn gen_c(in_file: &std::path::Path, out_dir: &std::path::Path) {
+pub(crate) fn gen_c(in_file: &std::path::Path, out_dir: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
     let out_path = PathBuf::from(out_dir);
     let lib_dir = out_path.join("lib");
-    if let Err(e) = create_dir_all(lib_dir.clone()) {
-        eprintln!("Error creating {} ({})", lib_dir.display(), e);
-        std::process::exit(1);
-    }
+    create_dir_all(lib_dir.clone())?;
+
     let output = Command::new("futhark")
         .arg("c")
         .arg("--library")
@@ -23,20 +21,19 @@ pub(crate) fn gen_c(in_file: &std::path::Path, out_dir: &std::path::Path) {
             out_dir.to_str().expect("[gen_c] out_dir failed!")
         ))
         .arg(in_file)
-        .output()
-        .expect("[gen_c] failed to execute process");
+        .output()?;
     io::stdout().write_all(&output.stdout).unwrap();
     io::stderr().write_all(&output.stderr).unwrap();
+
+    Ok(())
 }
 
 #[cfg(feature = "cuda")]
-pub(crate) fn gen_c(in_file: &std::path::Path, out_dir: &std::path::Path) {
+pub(crate) fn gen_c(in_file: &std::path::Path, out_dir: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
     let out_path = PathBuf::from(out_dir);
     let lib_dir = out_path.join("lib");
-    if let Err(e) = create_dir_all(lib_dir.clone()) {
-        eprintln!("Error creating {} ({})", lib_dir.display(), e);
-        std::process::exit(1);
-    }
+    create_dir_all(lib_dir.clone())?;
+
     let output = Command::new("futhark")
         .arg("cuda")
         .arg("--library")
@@ -46,20 +43,19 @@ pub(crate) fn gen_c(in_file: &std::path::Path, out_dir: &std::path::Path) {
             out_dir.to_str().expect("[gen_c] out_dir failed!")
         ))
         .arg(in_file)
-        .output()
-        .expect("failed to execute process");
+        .output()?;
     io::stdout().write_all(&output.stdout).unwrap();
     io::stderr().write_all(&output.stderr).unwrap();
+
+    Ok(())
 }
 
 #[cfg(feature = "opencl")]
-pub(crate) fn gen_c(in_file: &std::path::Path, out_dir: &std::path::Path) {
+pub(crate) fn gen_c(in_file: &std::path::Path, out_dir: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
     let out_path = PathBuf::from(out_dir);
     let lib_dir = out_path.join("lib");
-    if let Err(e) = create_dir_all(lib_dir.clone()) {
-        eprintln!("Error creating {} ({})", lib_dir.display(), e);
-        std::process::exit(1);
-    }
+    create_dir_all(lib_dir.clone())?;
+
     let output = Command::new("futhark")
         .arg("opencl")
         .arg("--library")
@@ -69,10 +65,12 @@ pub(crate) fn gen_c(in_file: &std::path::Path, out_dir: &std::path::Path) {
             out_dir.to_str().expect("[gen_c] out_dir failed!")
         ))
         .arg(in_file)
-        .output()
-        .expect("failed to execute process");
+        .output()?;
+
     io::stdout().write_all(&output.stdout).unwrap();
     io::stderr().write_all(&output.stderr).unwrap();
+
+    Ok(())
 }
 
 pub(crate) fn generate_bindings(header: &std::path::Path, out: &std::path::Path) {

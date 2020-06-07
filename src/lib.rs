@@ -75,7 +75,7 @@ pub struct Opt {
     pub description: String,
 }
 
-pub fn genfut(opt: Opt) {
+pub fn genfut(opt: Opt) -> Result<(), Box<dyn std::error::Error>>{
     let name = opt.name;
     let futhark_file = &opt.file;
     let out_dir_str: String = format!("./{}", name);
@@ -83,10 +83,8 @@ pub fn genfut(opt: Opt) {
 
     // Create with create_dir_all, because we do not want to fail if
     // the directory already exists.
-    if let Err(e) = create_dir_all(out_dir) {
-        eprintln!("Error creating {:#?} ({})", out_dir, e);
-        std::process::exit(1);
-    }
+    create_dir_all(out_dir)?;
+
     #[cfg(not(feature = "no_futhark"))]
     {
         let mut futhark_cmd = Command::new("futhark");
@@ -99,19 +97,13 @@ pub fn genfut(opt: Opt) {
     gen_c(&futhark_file, &out_dir);
 
     // copy futhark file
-    if let Err(e) = std::fs::copy(futhark_file, PathBuf::from(out_dir).join("lib/a.fut")) {
-        eprintln!("Error copying file: {}", e);
-        std::process::exit(1);
-    }
+    std::fs::copy(futhark_file, PathBuf::from(out_dir).join("lib/a.fut"))?;
 
     #[cfg(not(all(feature = "opencl", target_os = "macos")))]
     {
         // Generate bindings
         let src_dir = PathBuf::from(out_dir).join("src");
-        if let Err(e) = create_dir_all(&src_dir) {
-            eprintln!("Error creating {:#?}, ({})", src_dir, e);
-            std::process::exit(1);
-        }
+        create_dir_all(&src_dir)?;
 
         generate_bindings(
             &PathBuf::from(out_dir).join("lib/a.h"),
@@ -179,4 +171,6 @@ pub fn genfut(opt: Opt) {
         File::create(PathBuf::from(out_dir).join("src/lib.rs")).expect("File creation failed!");
     writeln!(&mut methods_file, "{}", static_lib);
     writeln!(&mut methods_file, "{}", gen_entry_points(&entry_points));
+
+    Ok(())
 }
