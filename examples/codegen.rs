@@ -1,7 +1,7 @@
 extern crate genfut;
 use genfut::Opt;
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     genfut::genfut(Opt {
         name: "matmul".to_string(),
         file: std::path::PathBuf::from("matmul.fut"),
